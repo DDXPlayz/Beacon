@@ -1,0 +1,377 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 100%;
+    --card-elevated: 0 0% 11%;
+
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 265 70% 60%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 55%;
+
+    --accent: 265 70% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 18%;
+    --input: 0 0% 12%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.75rem;
+
+    --success: 142 76% 46%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+
+    --streak: 25 95% 55%;
+
+    /* Gradient colors */
+    --gradient-start: 217 91% 60%;
+    --gradient-end: 265 70% 60%;
+  }
+
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  /* Gradient utilities */
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+  }
+
+  .gradient-bg {
+    background: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+  }
+
+  .gradient-border {
+    position: relative;
+    background: hsl(var(--card));
+    border: none;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  .card-base {
+    @apply bg-card rounded-2xl border border-border p-5 transition-all duration-200;
+  }
+
+  .card-base:hover {
+    border-color: hsl(var(--border) / 0.8);
+  }
+
+  .card-elevated {
+    @apply bg-card-elevated rounded-2xl border border-border p-5;
+  }
+
+  /* Hero progress card - most prominent element */
+  .progress-hero {
+    @apply bg-card rounded-3xl p-8 relative overflow-hidden border border-border;
+  }
+
+  .progress-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+  }
+
+  .progress-hero::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 120px;
+    background: linear-gradient(180deg, hsl(var(--primary) / 0.08), transparent);
+    pointer-events: none;
+  }
+
+  .progress-bar {
+    @apply h-4 bg-muted rounded-full overflow-hidden;
+  }
+
+  .progress-bar-sm {
+    @apply h-2.5 bg-muted rounded-full overflow-hidden;
+  }
+
+  .progress-fill-primary {
+    @apply h-full rounded-full transition-all duration-700 ease-out;
+    background: linear-gradient(90deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+  }
+
+  .progress-fill-secondary {
+    @apply h-full rounded-full transition-all duration-700 ease-out;
+    background: linear-gradient(90deg, hsl(var(--secondary)), hsl(var(--gradient-end)));
+  }
+
+  .progress-fill {
+    @apply h-full rounded-full transition-all duration-500;
+    background: linear-gradient(90deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+  }
+
+  .metric-card {
+    @apply bg-card rounded-2xl border border-border p-5 flex flex-col gap-2 transition-all duration-300;
+  }
+
+  .metric-card:hover {
+    transform: translateY(-2px);
+    border-color: hsl(var(--primary) / 0.3);
+    box-shadow: 0 8px 24px -8px hsl(var(--primary) / 0.15);
+  }
+
+  .metric-icon {
+    @apply w-12 h-12 rounded-xl flex items-center justify-center;
+  }
+
+  .badge-earned {
+    @apply bg-card rounded-xl p-4 flex flex-col items-center justify-center gap-2 transition-all cursor-pointer;
+    border: 2px solid transparent;
+    background-image: linear-gradient(hsl(var(--card)), hsl(var(--card))), 
+                      linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+
+  .badge-earned:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 24px -8px hsl(var(--primary) / 0.3);
+  }
+
+  .badge-locked {
+    @apply bg-muted/30 border border-border/50 rounded-xl p-4 flex flex-col items-center justify-center gap-2 opacity-50 cursor-pointer transition-all;
+  }
+
+  .badge-locked:hover {
+    opacity: 0.7;
+    background: hsl(var(--muted) / 0.5);
+  }
+
+  .challenge-card {
+    @apply bg-card rounded-2xl border border-border p-5 relative overflow-hidden transition-all duration-300;
+  }
+
+  .challenge-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+  }
+
+  .challenge-card:hover {
+    border-color: hsl(var(--secondary) / 0.3);
+    box-shadow: 0 8px 24px -8px hsl(var(--secondary) / 0.15);
+  }
+
+  .activity-item {
+    @apply flex items-center justify-between py-4 border-b border-border/50 last:border-0 transition-all duration-200;
+  }
+
+  .category-tag {
+    @apply text-xs font-semibold px-3 py-1.5 rounded-lg;
+    background: linear-gradient(135deg, hsl(var(--gradient-start) / 0.15), hsl(var(--gradient-end) / 0.15));
+    color: hsl(var(--primary));
+  }
+
+  .avatar-option {
+    @apply w-16 h-16 rounded-2xl bg-card border-2 border-border cursor-pointer transition-all flex items-center justify-center text-2xl;
+  }
+
+  .avatar-option:hover {
+    border-color: hsl(var(--primary) / 0.5);
+    transform: translateY(-2px);
+  }
+
+  .avatar-option-selected {
+    border: 2px solid transparent;
+    background-image: linear-gradient(hsl(var(--card)), hsl(var(--card))), 
+                      linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -8px hsl(var(--primary) / 0.4);
+  }
+
+  .cta-primary {
+    @apply text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-lg;
+    background: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+    box-shadow: 0 4px 20px -4px hsl(var(--primary) / 0.5);
+  }
+
+  .cta-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px -4px hsl(var(--primary) / 0.6);
+  }
+
+  .cta-large {
+    @apply text-white font-bold text-lg px-8 py-5 rounded-2xl transition-all shadow-xl w-full flex items-center justify-center gap-3;
+    background: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+    box-shadow: 0 8px 32px -8px hsl(var(--primary) / 0.6);
+  }
+
+  .cta-large:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 48px -8px hsl(var(--primary) / 0.7);
+  }
+
+  .cta-large:active {
+    transform: translateY(-1px);
+  }
+
+  .stat-value {
+    @apply text-3xl font-bold text-foreground tracking-tight;
+  }
+
+  .stat-label {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .section-title {
+    @apply text-xl font-bold text-foreground mb-5 flex items-center gap-2;
+  }
+
+  /* Login page */
+  .login-card {
+    @apply bg-card rounded-3xl p-8 relative overflow-hidden;
+  }
+
+  .login-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, hsl(var(--gradient-start) / 0.5), hsl(var(--gradient-end) / 0.5));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .beacon-logo {
+    @apply text-4xl md:text-5xl font-bold tracking-tight;
+    font-family: 'Space Grotesk', sans-serif;
+    background: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Modal backdrop */
+  .modal-backdrop {
+    @apply fixed inset-0 bg-black/80 backdrop-blur-sm z-50;
+  }
+
+  .modal-content {
+    @apply relative z-[60] bg-card border border-border rounded-3xl w-full max-w-md overflow-hidden;
+    box-shadow: 0 24px 64px -16px hsl(var(--primary) / 0.3);
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    @apply bg-muted animate-pulse rounded-lg;
+  }
+
+  /* Tooltip improvements */
+  .tooltip-content {
+    @apply bg-card border border-border text-foreground rounded-lg px-3 py-2 text-sm shadow-xl;
+  }
+
+  /* Claim button */
+  .claim-button {
+    @apply font-semibold gap-2 transition-all;
+    background: linear-gradient(135deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+    box-shadow: 0 4px 16px -4px hsl(var(--primary) / 0.5);
+  }
+
+  .claim-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px -4px hsl(var(--primary) / 0.6);
+  }
+
+  /* Scrollbar styling - hidden but functional */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Default scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border) / 0.5);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--border));
+  }
+}

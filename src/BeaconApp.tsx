@@ -26,7 +26,8 @@ interface Challenge {
   description: string;
   target: number;
   progress: number;
-  reward: number;
+  rewardXP: number;
+  completed: boolean;
 }
 
 interface UserData {
@@ -56,30 +57,36 @@ const RANKS = [
 ];
 
 /* ==============================
-   BADGE DEFINITIONS
+   CHALLENGE DEFINITIONS
    ============================== */
 
-const BADGE_DEFINITIONS: Badge[] = [
+const CHALLENGE_POOL: Challenge[] = [
   {
-    id: "first_deed",
-    label: "First Step",
-    description: "Log your first good deed",
-    icon: "⭐",
-    unlocked: false,
+    id: "daily_kindness",
+    title: "Daily Kindness",
+    description: "Log 3 good deeds",
+    target: 3,
+    progress: 0,
+    rewardXP: 100,
+    completed: false,
   },
   {
-    id: "streak_3",
-    label: "Consistent",
-    description: "Maintain a 3-day streak",
-    icon: "🔥",
-    unlocked: false,
+    id: "eco_warrior",
+    title: "Eco Warrior",
+    description: "Log 5 eco-friendly deeds",
+    target: 5,
+    progress: 0,
+    rewardXP: 150,
+    completed: false,
   },
   {
-    id: "level_5",
-    label: "Getting Serious",
-    description: "Reach level 5",
-    icon: "🏅",
-    unlocked: false,
+    id: "helping_hand",
+    title: "Helping Hand",
+    description: "Help others 4 times",
+    target: 4,
+    progress: 0,
+    rewardXP: 120,
+    completed: false,
   },
 ];
 
@@ -95,8 +102,8 @@ const defaultUserData: UserData = {
   streak: 0,
   lastActivityDate: null,
   activities: [],
-  badges: BADGE_DEFINITIONS,
-  challenges: [],
+  badges: [],
+  challenges: [CHALLENGE_POOL[0]],
 };
 
 /* ==============================
@@ -113,9 +120,7 @@ export default function BeaconApp() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem("beacon_user_data");
-      if (stored) {
-        setUserData(JSON.parse(stored));
-      }
+      if (stored) setUserData(JSON.parse(stored));
     } catch {
       setUserData(defaultUserData);
     }
@@ -129,105 +134,87 @@ export default function BeaconApp() {
   }, [userData]);
 
   /* ==============================
-     GAMIFICATION LOGIC
+     LEVEL + RANK LOGIC
      ============================== */
 
   const calculateLevel = (xp: number) =>
     Math.floor(xp / XP_PER_LEVEL) + 1;
 
   const calculateRank = (level: number) => {
-    let currentRank = RANKS[0].name;
+    let current = RANKS[0].name;
     for (const rank of RANKS) {
-      if (level >= rank.minLevel) currentRank = rank.name;
+      if (level >= rank.minLevel) current = rank.name;
     }
-    return currentRank;
+    return current;
   };
 
   /* ==============================
-     BADGE UNLOCK LOGIC
+     CHALLENGE UPDATE LOGIC
      ============================== */
 
-  const updateBadges = (data: UserData): Badge[] => {
-    return data.badges.map((badge) => {
-      if (badge.unlocked) return badge;
+  const updateChallenges = (
+    challenges: Challenge[]
+  ): Challenge[] => {
+    return challenges.map((ch) => {
+      if (ch.completed) return ch;
 
-      if (
-        badge.id === "first_deed" &&
-        data.activities.length >= 1
-      ) {
-        return { ...badge, unlocked: true };
+      const updatedProgress = ch.progress + 1;
+
+      if (updatedProgress >= ch.target) {
+        return {
+          ...ch,
+          progress: ch.target,
+          completed: true,
+        };
       }
 
-      if (
-        badge.id === "streak_3" &&
-        data.streak >= 3
-      ) {
-        return { ...badge, unlocked: true };
-      }
-
-      if (
-        badge.id === "level_5" &&
-        data.level >= 5
-      ) {
-        return { ...badge, unlocked: true };
-      }
-
-      return badge;
+      return {
+        ...ch,
+        progress: updatedProgress,
+      };
     });
   };
 
-  /* ==============================
-     STREAK + XP UPDATE
-     ============================== */
+  const assignNewChallenge = (
+    existing: Challenge[]
+  ): Challenge[] => {
+    const available = CHALLENGE_POOL.find(
+      (c) =>
+        !existing.some((e) => e.id === c.id)
+    );
 
-  const updateStreak = (lastDate: string | null): number => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (!lastDate) return 1;
-
-    const previous = new Date(lastDate);
-    previous.setHours(0, 0, 0, 0);
-
-    const diffDays =
-      (today.getTime() - previous.getTime()) /
-      (1000 * 60 * 60 * 24);
-
-    if (diffDays === 1) return userData.streak + 1;
-    if (diffDays > 1) return 1;
-
-    return userData.streak;
+    return available ? [...existing, available] : existing;
   };
+
+  /* ==============================
+     LOG GOOD DEED (CORE ACTION)
+     ============================== */
 
   const logGoodDeed = () => {
     setUserData((prev) => {
-      const newXP = prev.xp + 50;
+      const updatedChallenges = updateChallenges(prev.challenges);
+
+      const completedNow = updatedChallenges.filter(
+        (c) => c.completed && !prev.challenges.find(
+          (p) => p.id === c.id && p.completed
+        )
+      );
+
+      const bonusXP = completedNow.reduce(
+        (sum, c) => sum + c.rewardXP,
+        0
+      );
+
+      const newXP = prev.xp + 50 + bonusXP;
       const newLevel = calculateLevel(newXP);
       const newRank = calculateRank(newLevel);
-      const newStreak = updateStreak(prev.lastActivityDate);
 
-      const updatedData = {
+      return {
         ...prev,
         xp: newXP,
         level: newLevel,
         rank: newRank,
-        streak: newStreak,
-        lastActivityDate: new Date().toISOString(),
-        activities: [
-          ...prev.activities,
-          {
-            id: Date.now().toString(),
-            title: "Good Deed",
-            category: "General",
-            points: 50,
-            date: new Date().toISOString(),
-          },
-        ],
-      };
-
-      return {
-        ...updatedData,
-        badges: updateBadges(updatedData),
+        challenges: assignNewChallenge(updatedChallenges),
       };
     });
   };
@@ -240,26 +227,21 @@ export default function BeaconApp() {
     <div style={styles.container}>
       <h1 style={styles.title}>Beacon</h1>
 
-      <div style={styles.card}>
-        <p><strong>Level:</strong> {userData.level}</p>
-        <p><strong>Streak:</strong> 🔥 {userData.streak}</p>
+      <button style={styles.button} onClick={logGoodDeed}>
+        Log Good Deed
+      </button>
 
-        <button style={styles.button} onClick={logGoodDeed}>
-          Log Good Deed
-        </button>
-      </div>
-
-      <div style={styles.badgeGrid}>
-        {userData.badges.map((badge) => (
-          <div
-            key={badge.id}
-            style={{
-              ...styles.badge,
-              opacity: badge.unlocked ? 1 : 0.3,
-            }}
-          >
-            <span style={{ fontSize: "24px" }}>{badge.icon}</span>
-            <p>{badge.label}</p>
+      <div style={styles.challengeList}>
+        {userData.challenges.map((ch) => (
+          <div key={ch.id} style={styles.card}>
+            <h4>{ch.title}</h4>
+            <p>{ch.description}</p>
+            <p>
+              Progress: {ch.progress}/{ch.target}
+            </p>
+            {ch.completed && (
+              <strong>Completed ✓</strong>
+            )}
           </div>
         ))}
       </div>
@@ -284,33 +266,22 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: "20px",
     color: "#7c3aed",
   },
-  card: {
-    backgroundColor: "#1a1a1a",
-    padding: "20px",
-    borderRadius: "12px",
-    maxWidth: "360px",
-  },
   button: {
-    marginTop: "12px",
+    marginBottom: "20px",
     padding: "10px",
-    width: "100%",
     backgroundColor: "#7c3aed",
     border: "none",
     borderRadius: "8px",
     color: "white",
     cursor: "pointer",
   },
-  badgeGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
-    gap: "12px",
-    marginTop: "24px",
-    maxWidth: "360px",
+  challengeList: {
+    maxWidth: "420px",
   },
-  badge: {
+  card: {
     backgroundColor: "#1a1a1a",
-    padding: "12px",
+    padding: "14px",
     borderRadius: "10px",
-    textAlign: "center",
+    marginBottom: "12px",
   },
 };

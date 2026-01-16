@@ -34,6 +34,7 @@ interface UserData {
   level: number;
   rank: string;
   streak: number;
+  lastActivityDate: string | null;
   activities: Activity[];
   badges: Badge[];
   challenges: Challenge[];
@@ -63,6 +64,7 @@ const defaultUserData: UserData = {
   level: 1,
   rank: "Newcomer",
   streak: 0,
+  lastActivityDate: null,
   activities: [],
   badges: [],
   challenges: [],
@@ -101,9 +103,8 @@ export default function BeaconApp() {
      GAMIFICATION LOGIC
      ============================== */
 
-  const calculateLevel = (xp: number): number => {
-    return Math.floor(xp / XP_PER_LEVEL) + 1;
-  };
+  const calculateLevel = (xp: number): number =>
+    Math.floor(xp / XP_PER_LEVEL) + 1;
 
   const calculateRank = (level: number): string => {
     let currentRank = RANKS[0].name;
@@ -115,17 +116,43 @@ export default function BeaconApp() {
     return currentRank;
   };
 
+  /* ==============================
+     STREAK LOGIC
+     ============================== */
+
+  const updateStreak = (lastDate: string | null): number => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (!lastDate) return 1;
+
+    const previous = new Date(lastDate);
+    previous.setHours(0, 0, 0, 0);
+
+    const diffDays =
+      (today.getTime() - previous.getTime()) /
+      (1000 * 60 * 60 * 24);
+
+    if (diffDays === 1) return userData.streak + 1;
+    if (diffDays > 1) return 1;
+
+    return userData.streak;
+  };
+
   const addXP = (amount: number) => {
     setUserData((prev) => {
       const newXP = prev.xp + amount;
       const newLevel = calculateLevel(newXP);
       const newRank = calculateRank(newLevel);
+      const newStreak = updateStreak(prev.lastActivityDate);
 
       return {
         ...prev,
         xp: newXP,
         level: newLevel,
         rank: newRank,
+        streak: newStreak,
+        lastActivityDate: new Date().toISOString(),
       };
     });
   };
@@ -143,17 +170,17 @@ export default function BeaconApp() {
      ============================== */
 
   const xpProgress =
-    (userData.xp % XP_PER_LEVEL) / XP_PER_LEVEL * 100;
+    ((userData.xp % XP_PER_LEVEL) / XP_PER_LEVEL) * 100;
 
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>Beacon</h1>
 
       <div style={styles.card}>
-        <p><strong>User:</strong> {userData.username}</p>
         <p><strong>XP:</strong> {userData.xp}</p>
         <p><strong>Level:</strong> {userData.level}</p>
         <p><strong>Rank:</strong> {userData.rank}</p>
+        <p><strong>Streak:</strong> 🔥 {userData.streak} days</p>
 
         <div style={styles.progressBar}>
           <div
@@ -170,7 +197,7 @@ export default function BeaconApp() {
       </div>
 
       <p style={styles.subtitle}>
-        XP, level, and rank update automatically
+        Streak updates based on consecutive daily activity
       </p>
     </div>
   );

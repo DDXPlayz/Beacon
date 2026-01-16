@@ -14,8 +14,9 @@ interface Activity {
 
 interface Badge {
   id: string;
-  name: string;
+  label: string;
   description: string;
+  icon: string;
   unlocked: boolean;
 }
 
@@ -55,6 +56,34 @@ const RANKS = [
 ];
 
 /* ==============================
+   BADGE DEFINITIONS
+   ============================== */
+
+const BADGE_DEFINITIONS: Badge[] = [
+  {
+    id: "first_deed",
+    label: "First Step",
+    description: "Log your first good deed",
+    icon: "⭐",
+    unlocked: false,
+  },
+  {
+    id: "streak_3",
+    label: "Consistent",
+    description: "Maintain a 3-day streak",
+    icon: "🔥",
+    unlocked: false,
+  },
+  {
+    id: "level_5",
+    label: "Getting Serious",
+    description: "Reach level 5",
+    icon: "🏅",
+    unlocked: false,
+  },
+];
+
+/* ==============================
    DEFAULT USER STATE
    ============================== */
 
@@ -66,7 +95,7 @@ const defaultUserData: UserData = {
   streak: 0,
   lastActivityDate: null,
   activities: [],
-  badges: [],
+  badges: BADGE_DEFINITIONS,
   challenges: [],
 };
 
@@ -103,21 +132,52 @@ export default function BeaconApp() {
      GAMIFICATION LOGIC
      ============================== */
 
-  const calculateLevel = (xp: number): number =>
+  const calculateLevel = (xp: number) =>
     Math.floor(xp / XP_PER_LEVEL) + 1;
 
-  const calculateRank = (level: number): string => {
+  const calculateRank = (level: number) => {
     let currentRank = RANKS[0].name;
     for (const rank of RANKS) {
-      if (level >= rank.minLevel) {
-        currentRank = rank.name;
-      }
+      if (level >= rank.minLevel) currentRank = rank.name;
     }
     return currentRank;
   };
 
   /* ==============================
-     STREAK LOGIC
+     BADGE UNLOCK LOGIC
+     ============================== */
+
+  const updateBadges = (data: UserData): Badge[] => {
+    return data.badges.map((badge) => {
+      if (badge.unlocked) return badge;
+
+      if (
+        badge.id === "first_deed" &&
+        data.activities.length >= 1
+      ) {
+        return { ...badge, unlocked: true };
+      }
+
+      if (
+        badge.id === "streak_3" &&
+        data.streak >= 3
+      ) {
+        return { ...badge, unlocked: true };
+      }
+
+      if (
+        badge.id === "level_5" &&
+        data.level >= 5
+      ) {
+        return { ...badge, unlocked: true };
+      }
+
+      return badge;
+    });
+  };
+
+  /* ==============================
+     STREAK + XP UPDATE
      ============================== */
 
   const updateStreak = (lastDate: string | null): number => {
@@ -139,66 +199,70 @@ export default function BeaconApp() {
     return userData.streak;
   };
 
-  const addXP = (amount: number) => {
+  const logGoodDeed = () => {
     setUserData((prev) => {
-      const newXP = prev.xp + amount;
+      const newXP = prev.xp + 50;
       const newLevel = calculateLevel(newXP);
       const newRank = calculateRank(newLevel);
       const newStreak = updateStreak(prev.lastActivityDate);
 
-      return {
+      const updatedData = {
         ...prev,
         xp: newXP,
         level: newLevel,
         rank: newRank,
         streak: newStreak,
         lastActivityDate: new Date().toISOString(),
+        activities: [
+          ...prev.activities,
+          {
+            id: Date.now().toString(),
+            title: "Good Deed",
+            category: "General",
+            points: 50,
+            date: new Date().toISOString(),
+          },
+        ],
+      };
+
+      return {
+        ...updatedData,
+        badges: updateBadges(updatedData),
       };
     });
-  };
-
-  /* ==============================
-     TEMP ACTION (SIMULATION)
-     ============================== */
-
-  const simulateGoodDeed = () => {
-    addXP(50);
   };
 
   /* ==============================
      RENDER
      ============================== */
 
-  const xpProgress =
-    ((userData.xp % XP_PER_LEVEL) / XP_PER_LEVEL) * 100;
-
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>Beacon</h1>
 
       <div style={styles.card}>
-        <p><strong>XP:</strong> {userData.xp}</p>
         <p><strong>Level:</strong> {userData.level}</p>
-        <p><strong>Rank:</strong> {userData.rank}</p>
-        <p><strong>Streak:</strong> 🔥 {userData.streak} days</p>
+        <p><strong>Streak:</strong> 🔥 {userData.streak}</p>
 
-        <div style={styles.progressBar}>
-          <div
-            style={{
-              ...styles.progressFill,
-              width: `${xpProgress}%`,
-            }}
-          />
-        </div>
-
-        <button style={styles.button} onClick={simulateGoodDeed}>
-          Log Good Deed (+50 XP)
+        <button style={styles.button} onClick={logGoodDeed}>
+          Log Good Deed
         </button>
       </div>
 
-      <p style={styles.subtitle}>
-        Streak updates based on consecutive daily activity
-      </p>
+      <div style={styles.badgeGrid}>
+        {userData.badges.map((badge) => (
+          <div
+            key={badge.id}
+            style={{
+              ...styles.badge,
+              opacity: badge.unlocked ? 1 : 0.3,
+            }}
+          >
+            <span style={{ fontSize: "24px" }}>{badge.icon}</span>
+            <p>{badge.label}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -226,17 +290,6 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "12px",
     maxWidth: "360px",
   },
-  progressBar: {
-    height: "10px",
-    backgroundColor: "#333",
-    borderRadius: "6px",
-    overflow: "hidden",
-    margin: "12px 0",
-  },
-  progressFill: {
-    height: "100%",
-    backgroundColor: "#7c3aed",
-  },
   button: {
     marginTop: "12px",
     padding: "10px",
@@ -247,9 +300,17 @@ const styles: Record<string, React.CSSProperties> = {
     color: "white",
     cursor: "pointer",
   },
-  subtitle: {
+  badgeGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
+    gap: "12px",
     marginTop: "24px",
-    opacity: 0.7,
-    fontSize: "14px",
+    maxWidth: "360px",
+  },
+  badge: {
+    backgroundColor: "#1a1a1a",
+    padding: "12px",
+    borderRadius: "10px",
+    textAlign: "center",
   },
 };

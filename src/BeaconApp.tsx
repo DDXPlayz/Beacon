@@ -40,6 +40,20 @@ interface UserData {
 }
 
 /* ==============================
+   GAMIFICATION CONSTANTS
+   ============================== */
+
+const XP_PER_LEVEL = 150;
+
+const RANKS = [
+  { name: "Newcomer", minLevel: 1 },
+  { name: "Helper", minLevel: 3 },
+  { name: "Contributor", minLevel: 6 },
+  { name: "Hero", minLevel: 10 },
+  { name: "Guardian", minLevel: 15 },
+];
+
+/* ==============================
    DEFAULT USER STATE
    ============================== */
 
@@ -62,41 +76,74 @@ export default function BeaconApp() {
   const [userData, setUserData] = useState<UserData>(defaultUserData);
 
   /* ==============================
-     LOAD DATA ON APP START
+     LOAD / SAVE (Persistence)
      ============================== */
 
   useEffect(() => {
     try {
-      const storedData = localStorage.getItem("beacon_user_data");
-
-      if (storedData) {
-        const parsedData: UserData = JSON.parse(storedData);
-        setUserData(parsedData);
+      const stored = localStorage.getItem("beacon_user_data");
+      if (stored) {
+        setUserData(JSON.parse(stored));
       }
-    } catch (error) {
-      console.error("Failed to load user data. Resetting to default.");
+    } catch {
       setUserData(defaultUserData);
     }
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem(
+      "beacon_user_data",
+      JSON.stringify(userData)
+    );
+  }, [userData]);
+
   /* ==============================
-     SAVE DATA ON STATE CHANGE
+     GAMIFICATION LOGIC
      ============================== */
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        "beacon_user_data",
-        JSON.stringify(userData)
-      );
-    } catch (error) {
-      console.error("Failed to save user data.");
+  const calculateLevel = (xp: number): number => {
+    return Math.floor(xp / XP_PER_LEVEL) + 1;
+  };
+
+  const calculateRank = (level: number): string => {
+    let currentRank = RANKS[0].name;
+    for (const rank of RANKS) {
+      if (level >= rank.minLevel) {
+        currentRank = rank.name;
+      }
     }
-  }, [userData]);
+    return currentRank;
+  };
+
+  const addXP = (amount: number) => {
+    setUserData((prev) => {
+      const newXP = prev.xp + amount;
+      const newLevel = calculateLevel(newXP);
+      const newRank = calculateRank(newLevel);
+
+      return {
+        ...prev,
+        xp: newXP,
+        level: newLevel,
+        rank: newRank,
+      };
+    });
+  };
+
+  /* ==============================
+     TEMP ACTION (SIMULATION)
+     ============================== */
+
+  const simulateGoodDeed = () => {
+    addXP(50);
+  };
 
   /* ==============================
      RENDER
      ============================== */
+
+  const xpProgress =
+    (userData.xp % XP_PER_LEVEL) / XP_PER_LEVEL * 100;
 
   return (
     <div style={styles.container}>
@@ -104,14 +151,26 @@ export default function BeaconApp() {
 
       <div style={styles.card}>
         <p><strong>User:</strong> {userData.username}</p>
+        <p><strong>XP:</strong> {userData.xp}</p>
         <p><strong>Level:</strong> {userData.level}</p>
         <p><strong>Rank:</strong> {userData.rank}</p>
-        <p><strong>XP:</strong> {userData.xp}</p>
-        <p><strong>Streak:</strong> {userData.streak}</p>
+
+        <div style={styles.progressBar}>
+          <div
+            style={{
+              ...styles.progressFill,
+              width: `${xpProgress}%`,
+            }}
+          />
+        </div>
+
+        <button style={styles.button} onClick={simulateGoodDeed}>
+          Log Good Deed (+50 XP)
+        </button>
       </div>
 
       <p style={styles.subtitle}>
-        User data loaded and persisted using localStorage
+        XP, level, and rank update automatically
       </p>
     </div>
   );
@@ -139,6 +198,27 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "20px",
     borderRadius: "12px",
     maxWidth: "360px",
+  },
+  progressBar: {
+    height: "10px",
+    backgroundColor: "#333",
+    borderRadius: "6px",
+    overflow: "hidden",
+    margin: "12px 0",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#7c3aed",
+  },
+  button: {
+    marginTop: "12px",
+    padding: "10px",
+    width: "100%",
+    backgroundColor: "#7c3aed",
+    border: "none",
+    borderRadius: "8px",
+    color: "white",
+    cursor: "pointer",
   },
   subtitle: {
     marginTop: "24px",

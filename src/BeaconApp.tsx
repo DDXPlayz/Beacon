@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 /* ==============================
-   DATA MODELS (TypeScript)
+   DATA MODELS
    ============================== */
 
 interface Activity {
@@ -40,21 +40,59 @@ interface UserData {
 }
 
 /* ==============================
-   MAIN APPLICATION COMPONENT
+   DEFAULT USER STATE
+   ============================== */
+
+const defaultUserData: UserData = {
+  username: "Guest",
+  xp: 0,
+  level: 1,
+  rank: "Newcomer",
+  streak: 0,
+  activities: [],
+  badges: [],
+  challenges: [],
+};
+
+/* ==============================
+   MAIN APPLICATION
    ============================== */
 
 export default function BeaconApp() {
-  /* -------- Core User State -------- */
-  const [userData, setUserData] = useState<UserData>({
-    username: "Guest",
-    xp: 0,
-    level: 1,
-    rank: "Newcomer",
-    streak: 0,
-    activities: [],
-    badges: [],
-    challenges: [],
-  });
+  const [userData, setUserData] = useState<UserData>(defaultUserData);
+
+  /* ==============================
+     LOAD DATA ON APP START
+     ============================== */
+
+  useEffect(() => {
+    try {
+      const storedData = localStorage.getItem("beacon_user_data");
+
+      if (storedData) {
+        const parsedData: UserData = JSON.parse(storedData);
+        setUserData(parsedData);
+      }
+    } catch (error) {
+      console.error("Failed to load user data. Resetting to default.");
+      setUserData(defaultUserData);
+    }
+  }, []);
+
+  /* ==============================
+     SAVE DATA ON STATE CHANGE
+     ============================== */
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "beacon_user_data",
+        JSON.stringify(userData)
+      );
+    } catch (error) {
+      console.error("Failed to save user data.");
+    }
+  }, [userData]);
 
   /* ==============================
      RENDER
@@ -73,7 +111,7 @@ export default function BeaconApp() {
       </div>
 
       <p style={styles.subtitle}>
-        Core application architecture initialized
+        User data loaded and persisted using localStorage
       </p>
     </div>
   );
